@@ -3,7 +3,7 @@
 > 100% client-side tool to convert any file into a byte array, hex dump, or C-style `0x` hex literal directly in your browser.
 
 **Author:** [SATOSprod](https://github.com/SATOSprod)  
-**License:** MIT — see [[LICENSE]]
+**License:** MIT — see [LICENSE](./LICENSE)
 
 ---
 
@@ -54,6 +54,6 @@ file-to-byte/
 ## License
 
 This project is released under the **MIT License**.  
-See [[LICENSE]] for full terms.
+See [LICENSE](./LICENSE) for full terms.
 
 © 2026 SATOSprod
