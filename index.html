@@ -1,0 +1,729 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>File to Byte — convert any file to bytes / hex</title>
+  <meta name="description" content="File to Byte converts any file, regardless of extension, into a byte array or hex dump directly in your browser. No upload, no server, no size limit imposed by us.">
+  <meta name="keywords" content="file to byte, file to hex, hex viewer, byte array converter, hex dump online, binary viewer">
+  <meta name="robots" content="index, follow">
+  <meta name="theme-color" content="#0e0e0c">
+  <link rel="canonical" href="index.html">
+
+  <!-- Open Graph -->
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="File to Byte">
+  <meta property="og:title" content="File to Byte — convert any file to bytes / hex">
+  <meta property="og:description" content="Convert any file into a byte array, hex dump, or 0x hex literal directly in your browser. 100% client-side, no server upload.">
+  <meta property="og:url" content="">
+  <meta property="og:image" content="og-image.png">
+  <meta property="og:locale" content="en_US">
+
+  <!-- Twitter Card -->
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="File to Byte — convert any file to bytes / hex">
+  <meta name="twitter:description" content="Convert any file into a byte array, hex dump, or 0x hex literal directly in your browser. 100% client-side.">
+  <meta name="twitter:image" content="og-image.png">
+
+  <link rel="icon" href="favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="style.css">
+  <style>
+    /* ── Intro block ────────────────────────────────────────── */
+    .intro { border-bottom: 1px solid var(--border); }
+    .intro-inner {
+      max-width: var(--w);
+      margin: 0 auto;
+      padding: 3rem var(--pad);
+      display: flex;
+      flex-direction: column;
+    }
+    .intro-head {
+      font-family: var(--mono);
+      font-size: 1.05rem;
+      font-weight: bold;
+      color: var(--text-hi);
+      margin-bottom: 1.1rem;
+      letter-spacing: -0.01em;
+    }
+    .intro-head span { color: var(--link); }
+    .intro-inner h1,
+    .intro-inner p,
+    .intro-inner div {
+      width: 100%;
+    }
+    .intro-inner p {
+      font-size: 0.9rem;
+      color: var(--text);
+      line-height: 1.75;
+      margin-bottom: 0.75rem;
+      max-width: 68ch;
+    }
+    .intro-meta {
+      font-family: var(--mono);
+      font-size: 0.78rem;
+      color: var(--text-lo);
+      margin: 1.5rem 0;
+      line-height: 2;
+    }
+    .intro-meta a { color: var(--text-lo); text-decoration: underline; }
+    .intro-meta a:hover { color: var(--link); }
+    .intro-links { display: flex; align-items: center; gap: 1.25rem; font-size: 0.85rem; flex-wrap: wrap; }
+    .intro-links a { color: var(--link); }
+    .intro-links a.cta {
+      border: 1px solid var(--link);
+      padding: 0.4rem 0.9rem;
+      font-family: var(--mono);
+      font-size: 0.82rem;
+      text-decoration: none;
+      transition: background 0.1s, color 0.1s;
+    }
+    .intro-links a.cta:hover { background: var(--link); color: var(--bg); }
+
+    .content { max-width: var(--w); margin: 0 auto; padding: 0.5rem var(--pad) 4rem; }
+
+    .sh {
+      font-family: var(--mono);
+      font-size: 0.72rem;
+      font-weight: bold;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--text-lo);
+      margin: 2.5rem 0 0.85rem;
+      padding-bottom: 0.4rem;
+      border-bottom: 1px solid var(--border);
+    }
+
+    /* ── Drop zone ─────────────────────────────────────────── */
+    .drop-zone {
+      border: 1px dashed var(--border-hi);
+      background: var(--bg-alt);
+      padding: 2.5rem 1.5rem;
+      text-align: center;
+      cursor: pointer;
+      font-family: var(--mono);
+      transition: border-color 0.1s, background 0.1s;
+    }
+    .drop-zone:hover, .drop-zone.drag { border-color: var(--link); background: var(--bg-code); }
+    .drop-zone-title { color: var(--text-hi); font-size: 0.95rem; margin-bottom: 0.4rem; }
+    .drop-zone-sub { color: var(--text-lo); font-size: 0.78rem; }
+    .drop-zone input[type=file] { display: none; }
+
+    /* ── File info bar ─────────────────────────────────────── */
+    .file-info {
+      display: none;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 0;
+      border: 1px solid var(--border);
+      border-top: none;
+      font-family: var(--mono);
+      font-size: 0.78rem;
+    }
+    .file-info.show { display: grid; }
+    .file-info-cell {
+      padding: 0.6rem 0.9rem;
+      border-right: 1px solid var(--border);
+    }
+    .file-info-cell:last-child { border-right: none; }
+    .file-info-label {
+      display: block;
+      color: var(--text-lo);
+      font-size: 0.68rem;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      margin-bottom: 0.25rem;
+    }
+    .file-info-val { color: var(--text-hi); word-break: break-all; }
+
+    /* ── Tabs ──────────────────────────────────────────────── */
+    .tabs {
+      display: flex;
+      border: 1px solid var(--border);
+      border-top: none;
+      font-family: var(--mono);
+      font-size: 0.8rem;
+    }
+    .tab-btn {
+      flex: 0 0 auto;
+      padding: 0.55rem 1.1rem;
+      color: var(--text-lo);
+      background: var(--bg-alt);
+      border: none;
+      border-right: 1px solid var(--border);
+      cursor: pointer;
+      font-family: var(--mono);
+      font-size: 0.8rem;
+    }
+    .tab-btn:hover { color: var(--text-hi); }
+    .tab-btn.active { color: var(--text-hi); background: var(--bg); }
+    .tab-spacer { flex: 1; background: var(--bg-alt); }
+    .tab-actions { display: flex; }
+    .tab-actions button {
+      padding: 0.55rem 1rem;
+      color: var(--text-lo);
+      background: var(--bg-alt);
+      border: none;
+      border-left: 1px solid var(--border);
+      cursor: pointer;
+      font-family: var(--mono);
+      font-size: 0.78rem;
+    }
+    .tab-actions button:hover { color: var(--link); }
+
+    /* ── Output ────────────────────────────────────────────── */
+    .output-wrap {
+      border: 1px solid var(--border);
+      border-top: none;
+      background: var(--bg-code);
+      max-height: 480px;
+      overflow: auto;
+    }
+    .output-empty {
+      padding: 2rem;
+      color: var(--text-lo);
+      font-family: var(--mono);
+      font-size: 0.82rem;
+      text-align: center;
+    }
+    pre.hexdump, pre.bytearr, pre.hex0x {
+      margin: 0;
+      border: none;
+      padding: 1rem 1.25rem;
+      font-size: 0.78rem;
+      line-height: 1.7;
+      white-space: pre;
+      color: var(--text);
+    }
+    pre.hex0x .h0 { color: var(--text-hi); }
+    pre.hex0x .h0zero { color: var(--border-hi); }
+    pre.hex0x .h0comma { color: var(--text-lo); }
+
+    /* ── Loading state ─────────────────────────────────────── */
+    .loading-block {
+      padding: 2.5rem 1.5rem;
+      text-align: center;
+      font-family: var(--mono);
+    }
+    .loading-title {
+      color: var(--text-hi);
+      font-size: 0.95rem;
+      margin-bottom: 1rem;
+      letter-spacing: 0.05em;
+    }
+    .loading-dots { color: var(--link); }
+    .loading-noise {
+      color: var(--text-lo);
+      font-size: 0.82rem;
+      letter-spacing: 0.15em;
+      word-break: break-all;
+      max-width: 46ch;
+      margin: 0 auto;
+      line-height: 1.8;
+      min-height: 1.8em;
+    }
+    .loading-bar-wrap {
+      max-width: 46ch;
+      margin: 1rem auto 0;
+      border: 1px solid var(--border);
+      height: 6px;
+    }
+    .loading-bar {
+      height: 100%;
+      width: 0%;
+      background: var(--link);
+      transition: width 0.08s linear;
+    }
+    .loading-pct {
+      margin-top: 0.6rem;
+      color: var(--text-lo);
+      font-size: 0.74rem;
+    }
+    .hexdump .addr { color: var(--text-lo); }
+    .hexdump .hex  { color: var(--text-hi); }
+    .hexdump .asc  { color: var(--text-lo); }
+    .hexdump .zero { color: var(--border-hi); }
+
+    .status-bar {
+      font-family: var(--mono);
+      font-size: 0.76rem;
+      color: var(--text-lo);
+      padding: 0.5rem 1.25rem;
+      border: 1px solid var(--border);
+      border-top: none;
+    }
+    .status-bar.warn { color: var(--red); }
+
+    /* ── Feature rows reused ───────────────────────────────── */
+    .feature-row {
+      display: grid;
+      grid-template-columns: 200px 1fr;
+      gap: 0 2rem;
+      padding: 0.75rem 0;
+      border-bottom: 1px solid var(--border);
+      font-size: 0.88rem;
+    }
+    .feature-row:first-child { border-top: 1px solid var(--border); }
+    .feature-name { font-family: var(--mono); font-size: 0.83rem; color: var(--text-hi); padding-top: 0.05rem; }
+    .feature-desc { color: var(--text-lo); line-height: 1.55; }
+    .feature-desc code { font-size: 0.82em; background: var(--bg-alt); padding: 0.05em 0.3em; color: var(--text-hi); }
+
+    .faq-row { border-bottom: 1px solid var(--border); padding: 0.85rem 0; }
+    .faq-row:first-child { border-top: 1px solid var(--border); }
+    .faq-q { font-family: var(--mono); font-size: 0.85rem; color: var(--text-hi); margin-bottom: 0.3rem; }
+    .faq-a { color: var(--text-lo); font-size: 0.85rem; line-height: 1.6; }
+
+    @media (max-width: 760px) {
+      .feature-row { grid-template-columns: 1fr; gap: 0.2rem; }
+      .file-info { grid-template-columns: 1fr 1fr; }
+      .intro-inner { padding: 2rem var(--pad); }
+      .intro-head { font-size: 0.95rem; }
+    }
+
+    @media (max-width: 640px) {
+      #nav { flex-wrap: wrap; height: auto; padding: 0.4rem var(--pad); }
+      .nav-links { flex-wrap: wrap; }
+      .intro-links { gap: 0.75rem; }
+      .loading-block { padding: 1.75rem 1rem; }
+      .loading-title { font-size: 0.85rem; }
+      .loading-noise { font-size: 0.72rem; letter-spacing: 0.08em; }
+      pre.hex0x { font-size: 0.68rem; padding: 0.75rem; }
+      .intro-links a.cta { padding: 0.4rem 0.75rem; font-size: 0.78rem; }
+      .drop-zone { padding: 1.75rem 1rem; }
+      .drop-zone-title { font-size: 0.85rem; }
+      .drop-zone-sub { font-size: 0.72rem; }
+      .file-info { grid-template-columns: 1fr 1fr; font-size: 0.72rem; }
+      .tabs { flex-wrap: wrap; }
+      .tab-btn { flex: 1 1 auto; text-align: center; }
+      .tab-spacer { display: none; }
+      .tab-actions { flex: 1 1 100%; }
+      .tab-actions button { flex: 1 1 auto; }
+      pre.hexdump, pre.bytearr { font-size: 0.68rem; padding: 0.75rem; }
+      .status-bar { font-size: 0.7rem; padding: 0.5rem 0.75rem; }
+      .faq-q { font-size: 0.8rem; }
+      .faq-a { font-size: 0.8rem; }
+    }
+
+    @media (max-width: 420px) {
+      .file-info { grid-template-columns: 1fr; }
+      .file-info-cell { border-right: none; border-bottom: 1px solid var(--border); }
+      .file-info-cell:last-child { border-bottom: none; }
+    }
+  </style>
+</head>
+<body>
+
+<nav id="nav">
+  <a class="nav-logo" href="index.html">File to Byte</a>
+  <ul class="nav-links">
+    <li><a href="index.html#convert" class="active">convert</a></li>
+    <li><a href="index.html#features">features</a></li>
+    <li><a href="index.html#faq">faq</a></li>
+  </ul>
+</nav>
+
+<!-- ── Intro ──────────────────────────────────────────────────── -->
+<section class="intro">
+  <div class="intro-inner">
+
+    <h1 class="intro-head"><span>File to Byte</span> — convert any file to bytes / hex</h1>
+    <p>
+      File to Byte reads a file straight into memory in your browser and
+      renders it as a raw byte array or a classic hex + ASCII dump. Nothing
+      is uploaded anywhere; the conversion happens entirely on the client
+      with the FileReader API.
+    </p>
+    <p>
+      Extension does not matter. <code>.exe</code>, <code>.png</code>,
+      <code>.rar</code>, <code>.ewffbfew</code>, files with no extension
+      at all — every file is just bytes, and every file is accepted.
+    </p>
+    <div class="intro-meta">
+      mode &nbsp;&nbsp;&nbsp;client-side, no server round-trip <br>
+      output &nbsp;hex dump &nbsp;/&nbsp; byte array (dec) &nbsp;/&nbsp; 0x hex literals
+    </div>
+    <div class="intro-links">
+      <a class="cta" href="#convert">start converting →</a>
+      <a href="#features">features →</a>
+      <a href="#faq">faq →</a>
+    </div>
+
+  </div>
+</section>
+
+<div class="content">
+
+  <!-- ── Convert ───────────────────────────────────────────────── -->
+  <h2 class="sh" id="convert">Convert</h2>
+
+  <div class="drop-zone" id="dropZone">
+    <input type="file" id="fileInput">
+    <div class="drop-zone-title">drop a file here, or click to browse</div>
+    <div class="drop-zone-sub">any file, any extension — read locally, never uploaded</div>
+  </div>
+
+  <div class="file-info" id="fileInfo">
+    <div class="file-info-cell"><span class="file-info-label">name</span><span class="file-info-val" id="infoName">—</span></div>
+    <div class="file-info-cell"><span class="file-info-label">size</span><span class="file-info-val" id="infoSize">—</span></div>
+    <div class="file-info-cell"><span class="file-info-label">type</span><span class="file-info-val" id="infoType">—</span></div>
+    <div class="file-info-cell"><span class="file-info-label">extension</span><span class="file-info-val" id="infoExt">—</span></div>
+  </div>
+
+  <div class="tabs" id="tabs" style="display:none;">
+    <button class="tab-btn active" data-tab="hex">hex dump</button>
+    <button class="tab-btn" data-tab="bytes">byte array</button>
+    <button class="tab-btn" data-tab="hex0x">0x hex</button>
+    <div class="tab-spacer"></div>
+    <div class="tab-actions">
+      <button id="copyBtn">copy</button>
+      <button id="downloadBtn">download .txt</button>
+    </div>
+  </div>
+
+  <div class="output-wrap" id="outputWrap">
+    <div class="output-empty" id="outputEmpty">no file loaded — output will render here</div>
+    <div class="loading-block" id="loadingBlock" style="display:none;">
+      <div class="loading-title">Loading<span class="loading-dots">...</span></div>
+      <div class="loading-noise" id="loadingNoise"></div>
+      <div class="loading-bar-wrap"><div class="loading-bar" id="loadingBar"></div></div>
+      <div class="loading-pct" id="loadingPct">0%</div>
+    </div>
+    <pre class="hexdump" id="hexOut" style="display:none;"></pre>
+    <pre class="bytearr" id="bytesOut" style="display:none;"></pre>
+    <pre class="hex0x" id="hex0xOut" style="display:none;"></pre>
+  </div>
+
+  <div class="status-bar" id="statusBar" style="display:none;"></div>
+
+  <!-- ── Features ──────────────────────────────────────────────── -->
+  <h2 class="sh" id="features">Features</h2>
+
+  <div class="feature-row">
+    <div class="feature-name">Any file, any extension</div>
+    <div class="feature-desc">There is no extension whitelist. <code>.exe</code>, <code>.png</code>,
+      <code>.rar</code>, files with a made-up or missing extension — the browser
+      reads raw bytes with <code>FileReader.readAsArrayBuffer</code>, so the
+      extension is never even checked.</div>
+  </div>
+  <div class="feature-row">
+    <div class="feature-name">Hex dump view</div>
+    <div class="feature-desc">Standard offset / hex / ASCII layout, 16 bytes per row,
+      non-printable bytes shown as <code>.</code> in the ASCII column — the same
+      layout used by tools like <code>hexdump -C</code>.</div>
+  </div>
+  <div class="feature-row">
+    <div class="feature-name">Byte array view</div>
+    <div class="feature-desc">Renders the file as a comma-separated decimal byte
+      array (<code>0-255</code> per byte), ready to paste into source code or a
+      test fixture.</div>
+  </div>
+  <div class="feature-row">
+    <div class="feature-name">0x hex literal view</div>
+    <div class="feature-desc">Renders every byte as a C-style hex literal
+      (<code>0x00, 0xFF, 0xB3, 0x03, ...</code>), ready to paste straight into
+      C, C++, Java, or Python source code.</div>
+  </div>
+  <div class="feature-row">
+    <div class="feature-name">Loading indicator for large files</div>
+    <div class="feature-desc">Large files (tens or hundreds of MB) take time to
+      read. While that happens, a <code>Loading...</code> screen with a live
+      progress bar and randomized scrambling characters is shown, then swaps
+      to the finished output the instant conversion completes.</div>
+  </div>
+  <div class="feature-row">
+    <div class="feature-name">Runs entirely client-side</div>
+    <div class="feature-desc">The file never leaves your machine. Conversion happens
+      in JavaScript in the current tab; there is no upload endpoint and no
+      network request tied to file contents.</div>
+  </div>
+  <div class="feature-row">
+    <div class="feature-name">Copy and download</div>
+    <div class="feature-desc">Copy the active view to the clipboard, or download it
+      as a <code>.txt</code> file, in one click.</div>
+  </div>
+  <div class="feature-row">
+    <div class="feature-name">Large-file guard</div>
+    <div class="feature-desc">Files above <code>2 MB</code> are truncated in the
+      dump to keep the browser tab responsive; the byte count shown always
+      reflects the real file size.</div>
+  </div>
+
+  <!-- ── FAQ ───────────────────────────────────────────────────── -->
+  <h2 class="sh" id="faq">FAQ</h2>
+
+  <div class="faq-row">
+    <div class="faq-q">Is my file uploaded anywhere?</div>
+    <div class="faq-a">No. The file is read locally through the browser's File API and never
+      leaves your device.</div>
+  </div>
+  <div class="faq-row">
+    <div class="faq-q">Does the file extension matter?</div>
+    <div class="faq-a">No. Every file is treated as a raw byte stream regardless of its
+      extension, or if it has none at all.</div>
+  </div>
+  <div class="faq-row">
+    <div class="faq-q">Is there a file size limit?</div>
+    <div class="faq-a">Any file can be loaded, but the on-screen dump is capped at the first
+      2 MB for performance; the reported file size is always exact.</div>
+  </div>
+  <div class="faq-row">
+    <div class="faq-q">Why does it show a Loading screen?</div>
+    <div class="faq-a">Reading a very large file (for example 100 MB) into memory and rendering
+      it as text takes a moment. A progress bar and scrambling placeholder characters are
+      shown during that time, then the real hex dump / byte array / 0x view replaces them
+      automatically once conversion finishes.</div>
+  </div>
+
+</div>
+
+<footer>
+  <span>file-to-byte &nbsp;·&nbsp; © 2026</span>
+  <span>client-side file → bytes / hex converter</span>
+</footer>
+
+<script>
+(function () {
+  const dropZone    = document.getElementById('dropZone');
+  const fileInput   = document.getElementById('fileInput');
+  const fileInfo    = document.getElementById('fileInfo');
+  const infoName    = document.getElementById('infoName');
+  const infoSize    = document.getElementById('infoSize');
+  const infoType    = document.getElementById('infoType');
+  const infoExt     = document.getElementById('infoExt');
+  const tabs        = document.getElementById('tabs');
+  const outputWrap  = document.getElementById('outputWrap');
+  const outputEmpty = document.getElementById('outputEmpty');
+  const loadingBlock= document.getElementById('loadingBlock');
+  const loadingNoise= document.getElementById('loadingNoise');
+  const loadingBar  = document.getElementById('loadingBar');
+  const loadingPct  = document.getElementById('loadingPct');
+  const hexOut      = document.getElementById('hexOut');
+  const bytesOut    = document.getElementById('bytesOut');
+  const hex0xOut    = document.getElementById('hex0xOut');
+  const statusBar   = document.getElementById('statusBar');
+  const copyBtn     = document.getElementById('copyBtn');
+  const downloadBtn = document.getElementById('downloadBtn');
+
+  const MAX_DUMP = 2 * 1024 * 1024; // 2 MB dump cap
+  const NOISE_CHARS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%^&*()_+-=[]{}|;:,.<>?/~';
+  let activeTab = 'hex';
+  let currentFile = null;
+  let noiseTimer = null;
+
+  function randomNoise(len) {
+    let s = '';
+    for (let i = 0; i < len; i++) s += NOISE_CHARS[(Math.random() * NOISE_CHARS.length) | 0];
+    return s;
+  }
+
+  function startNoise() {
+    stopNoise();
+    noiseTimer = setInterval(() => {
+      loadingNoise.textContent = randomNoise(40);
+    }, 1);
+  }
+
+  function stopNoise() {
+    if (noiseTimer) { clearInterval(noiseTimer); noiseTimer = null; }
+  }
+
+  dropZone.addEventListener('click', () => fileInput.click());
+  dropZone.addEventListener('dragover', e => { e.preventDefault(); dropZone.classList.add('drag'); });
+  dropZone.addEventListener('dragleave', () => dropZone.classList.remove('drag'));
+  dropZone.addEventListener('drop', e => {
+    e.preventDefault();
+    dropZone.classList.remove('drag');
+    if (e.dataTransfer.files && e.dataTransfer.files[0]) handleFile(e.dataTransfer.files[0]);
+  });
+  fileInput.addEventListener('change', e => {
+    if (e.target.files && e.target.files[0]) handleFile(e.target.files[0]);
+  });
+
+  document.querySelectorAll('.tab-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      activeTab = btn.dataset.tab;
+      renderActive();
+    });
+  });
+
+  function formatSize(bytes) {
+    if (bytes < 1024) return bytes + ' B';
+    if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(2) + ' KB';
+    if (bytes < 1024 * 1024 * 1024) return (bytes / (1024 * 1024)).toFixed(2) + ' MB';
+    return (bytes / (1024 * 1024 * 1024)).toFixed(2) + ' GB';
+  }
+
+  function getExt(name) {
+    const i = name.lastIndexOf('.');
+    if (i === -1 || i === name.length - 1) return '(none)';
+    return name.slice(i + 1);
+  }
+
+  function handleFile(file) {
+    currentFile = file;
+    infoName.textContent = file.name || '(unnamed)';
+    infoSize.textContent = formatSize(file.size) + ' (' + file.size.toLocaleString() + ' bytes)';
+    infoType.textContent = file.type || 'application/octet-stream';
+    infoExt.textContent  = getExt(file.name || '');
+    fileInfo.classList.add('show');
+    tabs.style.display = 'flex';
+
+    statusBar.style.display = 'none';
+    outputEmpty.style.display = 'none';
+    hexOut.style.display = 'none';
+    bytesOut.style.display = 'none';
+    hex0xOut.style.display = 'none';
+    loadingBlock.style.display = 'block';
+    loadingBar.style.width = '0%';
+    loadingPct.textContent = '0%';
+    startNoise();
+
+    const reader = new FileReader();
+
+    reader.onprogress = function (e) {
+      if (e.lengthComputable) {
+        const pct = Math.round((e.loaded / e.total) * 100);
+        loadingBar.style.width = pct + '%';
+        loadingPct.textContent = pct + '%';
+      }
+    };
+
+    reader.onload = function (e) {
+      const buf = e.target.result;
+      const full = new Uint8Array(buf);
+      const truncated = full.length > MAX_DUMP;
+      const bytes = truncated ? full.subarray(0, MAX_DUMP) : full;
+
+      loadingBar.style.width = '100%';
+      loadingPct.textContent = '100%';
+
+      // slight delay so the user sees 100% + the loading effect before render
+      setTimeout(() => {
+        hexOut.dataset.rendered   = renderHex(bytes);
+        bytesOut.dataset.rendered = renderBytes(bytes);
+        hex0xOut.dataset.rendered = renderHex0x(bytes);
+
+        if (truncated) {
+          statusBar.className = 'status-bar warn';
+          statusBar.style.display = 'block';
+          statusBar.textContent =
+            'showing first ' + formatSize(MAX_DUMP) + ' of ' + formatSize(full.length) +
+            ' (' + full.length.toLocaleString() + ' bytes total)';
+        } else {
+          statusBar.className = 'status-bar';
+          statusBar.style.display = 'block';
+          statusBar.textContent = full.length.toLocaleString() + ' bytes read';
+        }
+
+        stopNoise();
+        loadingBlock.style.display = 'none';
+        outputEmpty.style.display = 'none';
+        renderActive();
+      }, 120);
+    };
+    reader.onerror = function () {
+      stopNoise();
+      loadingBlock.style.display = 'none';
+      outputEmpty.textContent = 'error reading file';
+      outputEmpty.style.display = 'block';
+    };
+    reader.readAsArrayBuffer(file);
+  }
+
+  function renderHex(bytes) {
+    let out = '';
+    for (let i = 0; i < bytes.length; i += 16) {
+      const slice = bytes.subarray(i, i + 16);
+      const addr = i.toString(16).padStart(8, '0');
+      let hexPart = '';
+      let asciiPart = '';
+      for (let j = 0; j < 16; j++) {
+        if (j < slice.length) {
+          const b = slice[j];
+          hexPart += b.toString(16).padStart(2, '0') + ' ';
+          asciiPart += (b >= 32 && b <= 126) ? String.fromCharCode(b) : '.';
+        } else {
+          hexPart += '   ';
+        }
+        if (j === 7) hexPart += ' ';
+      }
+      out += addr + '  ' + hexPart + ' ' + asciiPart + '\n';
+    }
+    return out || '(empty file)';
+  }
+
+  function renderBytes(bytes) {
+    if (bytes.length === 0) return '(empty file)';
+    const parts = new Array(bytes.length);
+    for (let i = 0; i < bytes.length; i++) parts[i] = bytes[i];
+    let out = '[';
+    for (let i = 0; i < parts.length; i++) {
+      out += parts[i];
+      if (i !== parts.length - 1) out += (((i + 1) % 24 === 0) ? ',\n ' : ', ');
+    }
+    out += ']';
+    return out;
+  }
+
+  function renderHex0x(bytes) {
+    if (bytes.length === 0) return '(empty file)';
+    let out = '';
+    for (let i = 0; i < bytes.length; i++) {
+      out += '0x' + bytes[i].toString(16).toUpperCase().padStart(2, '0');
+      if (i !== bytes.length - 1) out += (((i + 1) % 12 === 0) ? ',\n' : ', ');
+    }
+    return out;
+  }
+
+  function renderActive() {
+    hexOut.style.display = 'none';
+    bytesOut.style.display = 'none';
+    hex0xOut.style.display = 'none';
+
+    if (activeTab === 'hex') {
+      hexOut.textContent = hexOut.dataset.rendered || '';
+      hexOut.style.display = 'block';
+    } else if (activeTab === 'bytes') {
+      bytesOut.textContent = bytesOut.dataset.rendered || '';
+      bytesOut.style.display = 'block';
+    } else if (activeTab === 'hex0x') {
+      hex0xOut.textContent = hex0xOut.dataset.rendered || '';
+      hex0xOut.style.display = 'block';
+    }
+  }
+
+  function getActiveText() {
+    if (activeTab === 'hex') return hexOut.textContent;
+    if (activeTab === 'bytes') return bytesOut.textContent;
+    if (activeTab === 'hex0x') return hex0xOut.textContent;
+    return '';
+  }
+
+  copyBtn.addEventListener('click', () => {
+    const text = getActiveText();
+    if (!text) return;
+    navigator.clipboard.writeText(text).then(() => {
+      const orig = copyBtn.textContent;
+      copyBtn.textContent = 'copied';
+      setTimeout(() => copyBtn.textContent = orig, 1200);
+    });
+  });
+
+  downloadBtn.addEventListener('click', () => {
+    const text = getActiveText();
+    if (!text || !currentFile) return;
+    const blob = new Blob([text], { type: 'text/plain' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = currentFile.name + '.' + activeTab + '.txt';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  });
+})();
+</script>
+
+</body>
+</html>
